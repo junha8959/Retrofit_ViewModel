@@ -1,5 +1,6 @@
 package org.bumblebeecrew.blossom.network
 
+import com.skydoves.sandwich.ApiResponse
 import okhttp3.RequestBody
 import org.bumblebeecrew.blossom.Model.*
 import org.bumblebeecrew.blossom.network.request.*
@@ -14,12 +15,12 @@ interface RetrofitInterface {
     // @Path("post") String post > 매개변수. 매개변수 post가 @Path("post")를 보고 @GET 내부 {post}에 대입
 
     @GET("confirm")
-    fun confirm(
-    ): Call<DataClassConfirm>
+    suspend fun confirm(
+    ): ApiResponse<DataClassConfirm>
 
     @POST("auth/login")
-    fun authLogin(@Body requestLogin: RequestLogin?
-    ): Call<Login>
+    suspend fun authLogin(@Body requestLogin: RequestLogin?
+    ): ApiResponse<Login>
 
     @POST("auth/email")
     fun authEmail(@Body requestEmail: RequestEmail?

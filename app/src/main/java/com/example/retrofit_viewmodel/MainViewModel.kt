@@ -1,60 +1,61 @@
 package com.example.retrofit_viewmodel
 
+import android.content.ContentValues
 import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
-import com.example.retrofit_viewmodel.app.MyApplication
-import org.bumblebeecrew.blossom.Model.DataClassConfirm
-import org.bumblebeecrew.blossom.network.RetrofitClient
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
+import androidx.lifecycle.viewModelScope
+import com.example.retrofit_viewmodel.network.Repository
+import com.skydoves.sandwich.onError
+import com.skydoves.sandwich.onException
+import com.skydoves.sandwich.onSuccess
+import kotlinx.coroutines.launch
+import org.bumblebeecrew.blossom.app.MySharedPreferencesManager
+import org.bumblebeecrew.blossom.network.request.RequestLogin
 
-class MainViewModel : ViewModel() {
+class MainViewModel(private val repository: Repository) : ViewModel() {
 
     private var mutableText = MutableLiveData<String>()
     val liveText: LiveData<String>
         get() = mutableText
 
+
+
     fun getPost1() {
+        viewModelScope.launch {
+            val response = repository.confirm()
 
-        val api = RetrofitClient.getApiService(MyApplication.context()).confirm()
-        api.enqueue(object : Callback<DataClassConfirm> {
-            override fun onResponse(
-                call: Call<DataClassConfirm>,
-                response: Response<DataClassConfirm>
-            ) {
-                mutableText.value = response.toString()
-                Log.e("getPost1", "getPost1")
+            response.onSuccess {
+                // handles the success case when the API request gets a successful response.
+                Log.e("TAA",this.response.body()?.result.toString())
+
+            }.onError {
+                // handles error cases when the API request gets an error response.
+
+            }.onException {
+                // handles exceptional cases when the API request gets an exception response.
+                this.exception.printStackTrace()
             }
-
-            override fun onFailure(call: Call<DataClassConfirm>, t: Throwable) {
-                Log.d("FAIL", "FAIL")
-            }
-
-        })
-
+        }
     }
 
+    fun getPost2(requestLogin:RequestLogin) {
+        viewModelScope.launch {
+            val response = repository.authLogin(requestLogin)
 
-    fun getPost2(num: Int) {
+            response.onSuccess {
+                // handles the success case when the API request gets a successful response.
+                Log.e("onSuccess",this.response.body()?.resultLogin.toString())
 
-        val api = RetrofitClient.getApiService(MyApplication.context()).confirm()
-        api.enqueue(object : Callback<DataClassConfirm> {
-            override fun onResponse(
-                call: Call<DataClassConfirm>,
-                response: Response<DataClassConfirm>
-            ) {
-                mutableText.value = response.toString()
-                Log.e("getPost2", "getPost2")
+            }.onError {
+                // handles error cases when the API request gets an error response.
+                Log.e("onError",this.errorBody.toString())
+
+            }.onException {
+                // handles exceptional cases when the API request gets an exception response.
+                Log.e("onException", this.exception.printStackTrace().toString())
             }
-
-            override fun onFailure(call: Call<DataClassConfirm>, t: Throwable) {
-                Log.d("FAIL", "FAIL")
-            }
-
-        })
+        }
     }
-
 }

@@ -3,8 +3,10 @@ package org.bumblebeecrew.blossom.network
 import android.content.Context
 import android.content.pm.PackageInfo
 import android.os.Build
+import android.util.Log
 import com.example.retrofit_viewmodel.BuildConfig
 import com.example.retrofit_viewmodel.app.MyApplication
+import com.skydoves.sandwich.adapters.ApiResponseCallAdapterFactory
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import org.bumblebeecrew.blossom.app.MySharedPreferencesManager
@@ -12,6 +14,7 @@ import org.bumblebeecrew.blossom.network.courotine.ResponseAdapterFactory
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.create
+import java.util.concurrent.TimeUnit
 
 object RetrofitClient {
     private val RELEASE_URL = "http://blossom.bumblebeecrew.com/"
@@ -19,59 +22,62 @@ object RetrofitClient {
     private val url = "http://192.168.1.2:3000/"
 
     private lateinit var token: String
-    private lateinit var fcmToken : String
+    private lateinit var fcmToken: String
 
-    private val okHttpClient = OkHttpClient.Builder().addInterceptor(HttpLoggingInterceptor().apply {
-        level = if (BuildConfig.DEBUG) {
-            HttpLoggingInterceptor.Level.BODY
-        } else {
-            HttpLoggingInterceptor.Level.NONE
-        }
-    }).addInterceptor {
-        // Request
-        val request = it.request()
-            .newBuilder()
-            .addHeader("Authorization", "Bearer $token")
-            .addHeader("OsType", "android")
-            .addHeader("OsVersion", Build.VERSION.RELEASE.toString())
-            .addHeader("AppVersion", versionName().toString())
-            .addHeader("DeviceName", Build.MODEL)
-            .addHeader(
-                "FcmToken",
-                fcmToken
-            )
-            .build()
-        // Response
-        val response = it.proceed(request)
-        response
-    }.build()
+    private val okHttpClient =
+        OkHttpClient.Builder().addInterceptor(HttpLoggingInterceptor().apply {
+            level = if (BuildConfig.DEBUG) {
+                HttpLoggingInterceptor.Level.BODY
+            } else {
+                HttpLoggingInterceptor.Level.NONE
+            }
+        })
+            .addInterceptor {
+                // Request
+                val request = it.request()
+                    .newBuilder()
+                    .addHeader("Authorization", "Bearer $token")
+                    .addHeader("OsType", "android")
+                    .addHeader("OsVersion", Build.VERSION.RELEASE.toString())
+                    .addHeader("AppVersion", versionName().toString())
+                    .addHeader("DeviceName", Build.MODEL)
+                    .addHeader(
+                        "FcmToken",
+                        fcmToken
+                    )
+                    .build()
+                // Response
+                Log.e("tag","Authorization : Bearer $token \n" +
+                        "OsType : android \n"+
+                        "OsVersion : ${Build.VERSION.RELEASE.toString()}\n"+
+                        "AppVersion : ${versionName().toString()} \n"+
+                        "DeviceName : ${Build.MODEL} "
+                )
+                val response = it.proceed(request)
+                response
+            }.build()
 
-    /*private val json = Json {
-        isLenient = true // Json 큰따옴표 느슨하게 체크.
-        ignoreUnknownKeys = true // Field 값이 없는 경우 무시
-        coerceInputValues = true // "null" 이 들어간경우 default Argument 값으로 대체
-
-
-        .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
-    }*/
-
-    private fun getRetrofit(context: Context): Retrofit {
-        token = MySharedPreferencesManager.getString(context, "token")
-        fcmToken = MySharedPreferencesManager.getString(context, "fcmToken")
+    private fun getRetrofit(): Retrofit {
+        token = MySharedPreferencesManager.getString(MyApplication.context(), "token")
+        fcmToken = MySharedPreferencesManager.getString(MyApplication.context(), "fcmToken")
         return Retrofit.Builder()
             .baseUrl(DEBUG_URL)
             .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create())
+            .addCallAdapterFactory(ApiResponseCallAdapterFactory.create())
             .build()
     }
 
-    fun getApiService(context: Context): RetrofitInterface {
-        return getRetrofit(context).create(RetrofitInterface::class.java)
+    fun getApiService(): RetrofitInterface {
+        return getRetrofit().create(RetrofitInterface::class.java)
     }
 
     fun versionName(): String? {
 
-        val info: PackageInfo = MyApplication.context().packageManager.getPackageInfo(MyApplication.context().packageName, 0)
+        val info: PackageInfo = MyApplication.context().packageManager.getPackageInfo(
+            MyApplication.context().packageName,
+            0
+        )
         val appVersionName = info.versionName
 
         return appVersionName
